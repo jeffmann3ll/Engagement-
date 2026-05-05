@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeff & Hayley — RSVP Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --gold:#c9a96e; --gold-light:#e8d5a3; --rose:#c9788a; --deep-rose:#8b4a5c; --sage:#8a9e7e; --sage-light:#b8c9b0; --blush:#f2d4d0; --cream:#fdf6f0; --ink:#2d1f24; --bg:#1a0f13; --surface:rgba(255,250,247,0.05); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Cormorant Garamond',serif; background:var(--bg); min-height:100vh; color:var(--cream); }
+  .header { text-align:center; padding:40px 20px 30px; border-bottom:1px solid rgba(201,169,110,0.15); background:linear-gradient(to bottom,rgba(139,74,92,0.08),transparent); }
+  .header-eyebrow { font-family:'Cinzel',serif; font-size:8px; letter-spacing:5px; color:var(--rose); text-transform:uppercase; margin-bottom:10px; }
+  .header-title { font-family:'Cinzel',serif; font-size:26px; color:#fff; letter-spacing:2px; margin-bottom:4px; }
+  .header-sub { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:15px; color:rgba(201,169,110,0.7); }
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:28px 24px 20px; max-width:900px; margin:0 auto; }
+  .stat-card { background:var(--surface); border:1px solid rgba(201,169,110,0.15); padding:20px 16px; text-align:center; border-radius:3px; backdrop-filter:blur(8px); }
+  .stat-num { font-family:'Cinzel',serif; font-size:32px; font-weight:500; margin-bottom:6px; }
+  .stat-label { font-family:'Cinzel',serif; font-size:7px; letter-spacing:2.5px; text-transform:uppercase; opacity:0.7; }
+  .stat-card.total .stat-num { color:var(--gold); }
+  .stat-card.attending .stat-num { color:var(--sage-light); }
+  .stat-card.declined .stat-num { color:#d4767e; }
+  .stat-card.pending .stat-num { color:var(--blush); }
+  .progress-wrap { padding:0 24px 24px; max-width:900px; margin:0 auto; }
+  .progress-label { font-family:'Cinzel',serif; font-size:8px; letter-spacing:2px; color:rgba(201,169,110,0.5); text-transform:uppercase; margin-bottom:8px; }
+  .progress-bar-bg { height:4px; background:rgba(255,250,247,0.08); border-radius:2px; overflow:hidden; }
+  .progress-bar-fill { height:100%; background:linear-gradient(to right,var(--sage),var(--rose)); border-radius:2px; transition:width 0.6s ease; }
+  .refresh-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--sage); margin-right:6px; animation:pulse 2s infinite; vertical-align:middle; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .main { max-width:900px; margin:0 auto; padding:0 24px 60px; }
+  .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .toolbar-spacer { flex:1; }
+  .field-input { background:var(--surface); border:1px solid rgba(201,169,110,0.2); color:var(--cream); font-family:'Cormorant Garamond',serif; font-size:15px; padding:9px 14px; border-radius:2px; outline:none; transition:border-color 0.2s; }
+  .field-input::placeholder { color:rgba(201,169,110,0.3); }
+  .field-input:focus { border-color:var(--rose); }
+  select.field-input { appearance:none; cursor:pointer; padding-right:30px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a96e'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+  .btn { font-family:'Cinzel',serif; font-size:8px; letter-spacing:2px; text-transform:uppercase; padding:10px 18px; border:none; cursor:pointer; transition:all 0.2s; border-radius:2px; white-space:nowrap; }
+  .btn-rose { background:var(--rose); color:#fff; } .btn-rose:hover { background:var(--deep-rose); }
+  .btn-gold { background:var(--gold); color:var(--ink); } .btn-gold:hover { background:#b8935a; }
+  .btn-ghost { background:transparent; border:1px solid rgba(201,169,110,0.3); color:var(--gold-light); } .btn-ghost:hover { border-color:var(--rose); color:var(--blush); }
+  .add-form { background:var(--surface); border:1px solid rgba(201,169,110,0.2); padding:20px; border-radius:3px; margin-bottom:16px; display:none; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .add-form.open { display:flex; }
+  .field-group { display:flex; flex-direction:column; gap:5px; flex:1; min-width:140px; }
+  .field-label { font-family:'Cinzel',serif; font-size:7.5px; letter-spacing:2px; color:var(--gold); text-transform:uppercase; }
+  .table-wrap { background:var(--surface); border:1px solid rgba(201,169,110,0.15); border-radius:3px; overflow:hidden; }
+  .table-header { display:grid; grid-template-columns:36px 1fr 1fr 140px 170px 80px; gap:12px; padding:10px 16px; background:rgba(201,169,110,0.06); border-bottom:1px solid rgba(201,169,110,0.12); }
+  .th { font-family:'Cinzel',serif; font-size:7.5px; letter-spacing:2px; color:var(--gold); text-transform:uppercase; }
+  .table-body { max-height:520px; overflow-y:auto; }
+  .table-body::-webkit-scrollbar { width:4px; } .table-body::-webkit-scrollbar-thumb { background:rgba(201,169,110,0.3); border-radius:2px; }
+  .table-row { display:grid; grid-template-columns:36px 1fr 1fr 140px 170px 80px; gap:12px; padding:12px 16px; align-items:center; border-bottom:1px solid rgba(201,169,110,0.07); transition:background 0.15s; animation:rowIn 0.3s ease; }
+  @keyframes rowIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+  .table-row:hover { background:rgba(255,250,247,0.04); } .table-row:last-child { border-bottom:none; }
+  .td { font-family:'Cormorant Garamond',serif; font-size:15px; color:var(--cream); }
+  .td-num { font-family:'Cinzel',serif; font-size:10px; color:rgba(201,169,110,0.4); text-align:center; }
+  .td-small { font-size:12px; color:rgba(201,169,110,0.5); font-style:italic; display:block; }
+  .badge { display:inline-block; font-family:'Cinzel',serif; font-size:7.5px; letter-spacing:1.5px; padding:4px 10px; border-radius:2px; text-transform:uppercase; border:1px solid; cursor:pointer; }
+  .badge-pending { color:var(--blush); border-color:rgba(242,212,208,0.3); background:rgba(242,212,208,0.07); }
+  .badge-yes { color:var(--sage-light); border-color:rgba(138,158,126,0.5); background:rgba(138,158,126,0.13); }
+  .badge-no { color:#d4767e; border-color:rgba(180,80,80,0.4); background:rgba(180,80,80,0.09); }
+  .copy-link { font-family:'Cinzel',serif; font-size:7px; letter-spacing:1px; padding:4px 9px; background:transparent; border:1px solid rgba(201,169,110,0.25); color:rgba(201,169,110,0.6); cursor:pointer; border-radius:2px; text-transform:uppercase; transition:all 0.2s; white-space:nowrap; }
+  .copy-link:hover { border-color:var(--gold); color:var(--gold); } .copy-link.copied { border-color:var(--sage); color:var(--sage-light); }
+  .del-btn { font-family:'Cinzel',serif; font-size:7px; letter-spacing:1px; padding:4px 9px; background:transparent; border:1px solid rgba(180,80,80,0.3); color:#d4767e; cursor:pointer; border-radius:2px; transition:all 0.2s; }
+  .del-btn:hover { background:rgba(180,80,80,0.15); }
+  .empty-state { text-align:center; padding:50px 20px; font-style:italic; font-size:16px; color:rgba(201,169,110,0.4); }
+  .error-banner { background:rgba(180,80,80,0.15); border:1px solid rgba(180,80,80,0.3); padding:12px 16px; margin-bottom:16px; border-radius:3px; font-family:'Cinzel',serif; font-size:9px; letter-spacing:1.5px; color:#d4767e; display:none; }
+  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(100px); background:var(--gold); color:var(--ink); font-family:'Cinzel',serif; font-size:8.5px; letter-spacing:2px; padding:11px 22px; border-radius:2px; text-transform:uppercase; transition:transform 0.4s; z-index:999; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  @media(max-width:700px) {
+    .stats-grid { grid-template-columns:repeat(2,1fr); }
+    .table-header,.table-row { grid-template-columns:28px 1fr 120px; }
+    .th:nth-child(3),.th:nth-child(5),.th:nth-child(6),.td:nth-child(3),.td:nth-child(5),.td:nth-child(6) { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <p class="header-eyebrow">Host Dashboard</p>
+  <h1 class="header-title">Jeff &amp; Hayley</h1>
+  <p class="header-sub">Engagement Party &nbsp;·&nbsp; Saturday 7th November 2026 &nbsp;·&nbsp; Barenz Camden</p>
+</div>
+<div class="stats-grid">
+  <div class="stat-card total"><div class="stat-num" id="s-total">—</div><div class="stat-label">Invited</div></div>
+  <div class="stat-card attending"><div class="stat-num" id="s-yes">—</div><div class="stat-label">Attending</div></div>
+  <div class="stat-card declined"><div class="stat-num" id="s-no">—</div><div class="stat-label">Declined</div></div>
+  <div class="stat-card pending"><div class="stat-num" id="s-pending">—</div><div class="stat-label">Awaiting</div></div>
+</div>
+<div class="progress-wrap">
+  <div class="progress-label"><span class="refresh-dot"></span>Live — auto-refreshes every 30 seconds</div>
+  <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+</div>
+<div class="main">
+  <div class="error-banner" id="error-banner">Unable to connect — check your internet and refresh the page</div>
+  <div class="toolbar">
+    <button class="btn btn-rose" onclick="toggleForm()">+ Add Couple</button>
+    <select class="field-input" id="filter-select" onchange="renderTable()" style="width:160px">
+      <option value="all">All Guests</option>
+      <option value="pending">Awaiting</option>
+      <option value="yes">Attending</option>
+      <option value="no">Declined</option>
+    </select>
+    <input class="field-input" id="search-input" placeholder="Search guests..." oninput="renderTable()" style="width:200px"/>
+    <div class="toolbar-spacer"></div>
+    <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+    <button class="btn btn-gold" onclick="loadGuests()">↻ Refresh</button>
+  </div>
+  <div class="add-form" id="add-form">
+    <div class="field-group">
+      <label class="field-label">Guest Name</label>
+      <input class="field-input" id="inp-name" placeholder="e.g. Sarah" onkeydown="if(event.key==='Enter')addGuest()"/>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Partner Name</label>
+      <input class="field-input" id="inp-partner" placeholder="e.g. Michael" onkeydown="if(event.key==='Enter')addGuest()"/>
+    </div>
+    <button class="btn btn-rose" onclick="addGuest()">Add &amp; Copy Link</button>
+    <button class="btn btn-ghost" onclick="toggleForm()">Cancel</button>
+  </div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <span class="th">#</span><span class="th">Guest</span><span class="th">Partner</span>
+      <span class="th">Status</span><span class="th">Invite Link</span><span class="th">Actions</span>
+    </div>
+    <div class="table-body" id="table-body"><div class="empty-state">Loading guests...</div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const SUPABASE_URL = 'https://jppltctsbpbriiwivtql.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcGx0Y3RzYnBicmlpd2l2dHFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4ODQ4NjMsImV4cCI6MjA5MzQ2MDg2M30.Eh0nRrrOPIkMQBbofVRcg8cJEjmdK3ZeOWvkBn7nVvE';
+const INVITE_BASE = 'https://jeffmann3ll.github.io/engagement/invite.html';
+let allGuests = [];
+function api(path, options={}) {
+  return fetch(SUPABASE_URL+'/rest/v1/'+path, {
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation',...options.headers},...options
+  });
+}
+async function loadGuests() {
+  try {
+    const res = await api('guests?select=*&order=created_at.asc');
+    if (!res.ok) throw new Error();
+    allGuests = await res.json();
+    document.getElementById('error-banner').style.display='none';
+    updateStats(); renderTable();
+  } catch(e) {
+    document.getElementById('error-banner').style.display='block';
+    document.getElementById('table-body').innerHTML='<div class="empty-state">Could not load — check connection ⚠</div>';
+  }
+}
+function updateStats() {
+  const yes=allGuests.filter(g=>g.rsvp==='yes').length, no=allGuests.filter(g=>g.rsvp==='no').length, pending=allGuests.filter(g=>g.rsvp==='pending').length;
+  document.getElementById('s-total').textContent=allGuests.length;
+  document.getElementById('s-yes').textContent=yes;
+  document.getElementById('s-no').textContent=no;
+  document.getElementById('s-pending').textContent=pending;
+  document.getElementById('progress-fill').style.width=(allGuests.length?Math.round((yes+no)/allGuests.length*100):0)+'%';
+}
+function renderTable() {
+  const filter=document.getElementById('filter-select').value, search=document.getElementById('search-input').value.toLowerCase();
+  const list=allGuests.filter(g=>(filter==='all'||g.rsvp===filter)&&(!search||g.name.toLowerCase().includes(search)||g.partner.toLowerCase().includes(search)));
+  const body=document.getElementById('table-body');
+  if (!list.length){body.innerHTML='<div class="empty-state">'+(allGuests.length?'No guests match this filter ✦':'No guests yet — add your first couple above ✦')+'</div>';return;}
+  body.innerHTML=list.map(g=>{
+    const link=INVITE_BASE+'?id='+g.id;
+    const responded=g.responded_at?new Date(g.responded_at).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'—';
+    const label=g.rsvp==='yes'?'✓ Attending':g.rsvp==='no'?'✗ Declined':'Awaiting';
+    return `<div class="table-row">
+      <span class="td td-num">${allGuests.indexOf(g)+1}</span>
+      <span class="td">${esc(g.name)}</span><span class="td">${esc(g.partner)}</span>
+      <span class="td"><span class="badge badge-${g.rsvp}" onclick="cycleStatus('${g.id}','${g.rsvp}')" title="Click to change">${label}</span><span class="td-small">${responded}</span></span>
+      <span class="td"><button class="copy-link" id="cl-${g.id}" onclick="copyLink('${g.id}','${link}')">Copy Link</button></span>
+      <span class="td"><button class="del-btn" onclick="deleteGuest('${g.id}')">Delete</button></span>
+    </div>`;
+  }).join('');
+}
+async function cycleStatus(id,current){
+  const next={pending:'yes',yes:'no',no:'pending'}[current];
+  try{await api('guests?id=eq.'+id,{method:'PATCH',body:JSON.stringify({rsvp:next,responded_at:next!=='pending'?new Date().toISOString():null})});await loadGuests();showToast('Status updated ✦');}catch(e){showToast('Error updating');}
+}
+async function addGuest(){
+  const name=document.getElementById('inp-name').value.trim(),partner=document.getElementById('inp-partner').value.trim();
+  if(!name||!partner){showToast('Please enter both names');return;}
+  try{
+    const res=await api('guests',{method:'POST',body:JSON.stringify({name,partner,rsvp:'pending'})});
+    if(!res.ok)throw new Error();
+    const data=await res.json();
+    document.getElementById('inp-name').value='';document.getElementById('inp-partner').value='';
+    await loadGuests();
+    if(data&&data[0]){navigator.clipboard.writeText(INVITE_BASE+'?id='+data[0].id).catch(()=>{});showToast(name+' & '+partner+' added — link copied ✦');}
+  }catch(e){showToast('Error adding guest — check connection');}
+}
+async function deleteGuest(id){
+  if(!confirm('Remove this couple?'))return;
+  try{await api('guests?id=eq.'+id,{method:'DELETE'});await loadGuests();showToast('Guest removed');}catch(e){showToast('Error removing guest');}
+}
+function copyLink(id,link){
+  navigator.clipboard.writeText(link).then(()=>{
+    const btn=document.getElementById('cl-'+id);btn.textContent='Copied!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copy Link';btn.classList.remove('copied');},2000);
+    showToast('Invite link copied ✦');
+  });
+}
+function toggleForm(){const f=document.getElementById('add-form');f.classList.toggle('open');if(f.classList.contains('open'))document.getElementById('inp-name').focus();}
+function exportCSV(){
+  const rows=[['#','Guest','Partner','RSVP','Responded']];
+  allGuests.forEach((g,i)=>{const d=g.responded_at?new Date(g.responded_at).toLocaleDateString('en-AU'):'';rows.push([i+1,g.name,g.partner,g.rsvp==='yes'?'Attending':g.rsvp==='no'?'Declined':'Awaiting',d]);});
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='jeff-hayley-rsvp.csv';a.click();
+  showToast('CSV exported ✦');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let tt;function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2800);}
+loadGuests();setInterval(loadGuests,30000);
+</script>
+</body>
+</html>
